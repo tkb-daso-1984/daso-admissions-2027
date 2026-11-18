@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta name="dasuo-version" content="V7.0.3">
+<meta name="dasuo-version" content="V7.0.4">
 <meta name="dasuo-release-date" content="2026-11-18">
 <meta name="dasuo-signed-record-count" content="1135">
   <meta charset="UTF-8">
@@ -188,8 +188,10 @@
     .ticker-track{display:flex;width:max-content;align-items:center;animation:dasuo-ticker var(--ticker-duration,34s) linear infinite;will-change:transform}
     .ticker-viewport:hover .ticker-track,.ticker-viewport:focus-within .ticker-track{animation-play-state:paused}
     .ticker-item{display:block;white-space:nowrap;padding:0 66px 0 0;color:#85213a;font-weight:750;font-size:13px}
-    .ticker-item a{color:inherit;text-decoration:none;border-bottom:1px dashed currentColor}
-    .ticker-item a:hover,.ticker-item a:focus-visible{text-decoration:underline}
+    a.ticker-item,a.ticker-item:link,a.ticker-item:visited{color:#85213a;text-decoration:none;cursor:pointer}
+    .ticker-item:hover,.ticker-item:focus-visible{text-decoration:underline}
+    .ticker-item:focus-visible{outline:2px solid #ffdf92;outline-offset:2px;border-radius:4px}
+    .ticker-cta{border-bottom:1px solid currentColor}
     /* From the right viewport edge to entirely past the left; no duplicate scrolling copy. */
     @keyframes dasuo-ticker{from{transform:translateX(var(--ticker-start,100vw))}to{transform:translateX(-100%)}}
     .school{color:var(--navy)!important;font-weight:850}
@@ -241,8 +243,10 @@
     .latest-inner{min-height:52px;height:auto;padding-top:7px;padding-bottom:7px;gap:14px}
     .latest-label{background:#fcecef;color:#a81934;border:1px solid #f0c0cc;font-size:13px;padding:4px 12px}
     .ticker-item{color:#f9fbff;font-weight:750;font-size:15px;letter-spacing:.01em;line-height:1.5}
-    .ticker-item a{color:#ffdf92;text-decoration:none;border-bottom:1px solid currentColor;font-weight:900}
-    .ticker-item a:hover,.ticker-item a:focus-visible{color:#fff4cc;text-decoration:underline}
+    a.ticker-item,a.ticker-item:link,a.ticker-item:visited{color:#f9fbff}
+    .ticker-cta{color:#ffdf92;font-weight:900;border-bottom:1px solid currentColor}
+    .ticker-item:hover,.ticker-item:focus-visible{color:#fff4cc;text-decoration:underline}
+    .ticker-item:hover .ticker-cta,.ticker-item:focus-visible .ticker-cta{color:#fff4cc}
     .brand-promo{padding:44px 0 52px;background:linear-gradient(180deg,#fff 0%,#fff 36%,#fffbfc 100%)}
     .brand-promo-inner{display:flex;flex-direction:column;align-items:stretch;gap:25px}
     .brand-copy{max-width:1120px}
@@ -358,7 +362,7 @@
       <span class="latest-label">最新消息</span>
       <div class="ticker-viewport" aria-label="最新招生資訊">
         <div id="tickerTrack" class="ticker-track">
-          <span class="ticker-item" id="tickerMessage">【重要公告】2027研究所考試最新資訊持續更新中！立即掌握最新研究所考情！ <a href="https://www.daso.com.tw/newExam/inside?str=B9C9B45092736018DB142D38F7F0D281&amp;print_id=22614" target="_blank" rel="noopener noreferrer">[點此查看2027研究所考試簡章詳情]</a></span>
+          <a class="ticker-item" id="tickerMessage" href="https://www.daso.com.tw/newExam/inside?str=B9C9B45092736018DB142D38F7F0D281&amp;print_id=22614" target="_blank" rel="noopener noreferrer" aria-label="重要公告：開啟2027研究所考試簡章詳情">【重要公告】2027研究所考試最新資訊持續更新中！立即掌握最新研究所考情！ <span class="ticker-cta">[點此查看2027研究所考試簡章詳情]</span></a>
         </div>
       </div>
     </div>
@@ -407,7 +411,7 @@
         <label for="subjectMode">多項符合方式</label>
         <select id="subjectMode" aria-label="考科複選模式"><option value="any">符合任一項</option><option value="all">同時包含全部</option></select>
         <button type="button" class="smallbtn" id="clearSubjects">清除考科</button>
-        <span class="subject-note">再點一次可取消。同名考科的(A)、(B)、(H)等版本會合併搜尋；電子計算機概論／計算機概論／計概視為同一類，書審／口試亦會統一搜尋。點選考科可跨校比對並清除其他查詢條件；包含該科不代表必考，選考規則請看橘色選考框。</span>
+        <span class="subject-note">再點一次可取消。同名考科的(A)、(B)、(H)等版本會合併搜尋，並包含複合考科括號內的內容（如「數學(A)(含線性代數、離散數學)」）；計概同義詞、書審及口試亦可跨校搜尋。點選考科可跨校比對並清除其他查詢條件；包含該科不代表必考，選考規則請看橘色選考框。</span>
       </div>
       <div class="toolbar">
         <div class="tools">
@@ -427,7 +431,7 @@
     </div>
     <section class="panel chart-panel" aria-labelledby="charttitle"><div class="sectionhead"><div><h2 id="charttitle">招生資料分布</h2><p class="hint">依目前條件統計各校資料筆數；共用名額不重複計入一般生或在職生欄；跨組共用依群組識別去重。</p></div></div><div id="chart" class="chart"><div class="empty">載入資料後顯示</div></div></section>
     <section class="panel results-panel" aria-labelledby="resulttitle">
-      <div class="sectionhead"><div><h2 id="resulttitle">查詢結果</h2><p class="hint">點擊考科、書審或口試可快速跨校比對（會清除先前的關鍵字、學校、地區、管道及考試方式條件）；共用名額另欄顯示，跨組共用名額統計依群組去重；同一系所的不同招生身分分筆列示；「擇一／擇二／擇三」科目以同一框群組呈現。備註僅保留重要門檻，完整規定請參閱簡章。手機上可左右捲動。</p></div></div>
+      <div class="sectionhead"><div><h2 id="resulttitle">查詢結果</h2><p class="hint">點擊考科、書審或口試可快速跨校比對，包含「含線性代數」等複合考科內容（會清除先前的關鍵字、學校、地區、管道及考試方式條件）；共用名額另欄顯示，跨組共用名額統計依群組去重；同一系所的不同招生身分分筆列示；「擇一／擇二／擇三」科目以同一框群組呈現。備註僅保留重要門檻，完整規定請參閱簡章。手機上可左右捲動。</p></div></div>
       <div class="tablewrap"><table><thead><tr><th>公私立</th><th>年度</th><th>學校</th><th>地區</th><th>系所 / 組別</th><th>一般生</th><th>在職生</th><th>共用名額</th><th>考試科目／書審</th><th>考試方式</th><th>複試內容</th><th>筆試時間</th><th>複試時間</th><th>更多</th></tr></thead><tbody id="results"><tr><td colspan="14" class="empty">正在載入資料…</td></tr></tbody></table></div>
       <div class="paging"><span id="rangeInfo">尚未載入</span><div class="buttons"><button type="button" class="btn" id="prev" disabled>上一頁</button><span id="pageInfo">1 / 1</span><button type="button" class="btn" id="next" disabled>下一頁</button></div></div>
       <p class="footer-note">資訊整理僅供查詢參考，實際招生名額、考科、考試時間及報考資格請以各校最新正式公告為準。</p>
@@ -998,6 +1002,15 @@
       // department name, selection caption, or a textual admission note.
       return labels.some(name=>name.includes(q));
     }
+    // V7.0.4: a chosen subject chip matches either the normalized complete
+    // subject or an included subtopic in a printed composite exam title.
+    // e.g. 線性代數 / 離散數學 also match 數學(A)(含線性代數、離散數學).
+    // Search only parsed subject labels, never department names or remarks.
+    function selectedSubjectMatches(r,key){
+      if(r.__subjects.includes(key))return true;
+      if(key.startsWith('@'))return false;
+      return subjectTermMatches(r,key);
+    }
     function keywordMatchesRow(r,keyword,subjectsOnly=false){
       if(subjectsOnly)return subjectTermMatches(r,keyword);
       return subjectKeywordMatch(r,keyword)
@@ -1011,7 +1024,7 @@
         &&(!$('route').value||r.__route===$('route').value)
         &&selections.every(([id,key])=>!$(id).value||r[key]===$(id).value)
         &&(!selectedMethod||r['考試方式']===selectedMethod)
-        &&(!selectedSubjects.size||($('subjectMode').value==='all'?[...selectedSubjects].every(s=>r.__subjects.includes(s)):[...selectedSubjects].some(s=>r.__subjects.includes(s))))
+        &&(!selectedSubjects.size||($('subjectMode').value==='all'?[...selectedSubjects].every(s=>selectedSubjectMatches(r,s)):[...selectedSubjects].some(s=>selectedSubjectMatches(r,s))))
         &&(!keywords.length||keywords.every(keyword=>keywordMatchesRow(r,keyword,keywords.length>1))));
       page=1;refreshSubjectFilter();draw();
     }
@@ -1140,12 +1153,23 @@
       const track=document.getElementById('tickerTrack');
       if(track){
         for(const el of track.querySelectorAll('.ticker-item')){
+          // V7.0.4: make the *entire moving announcement* a single link.
+          // Preserve the configured destination and optional highlighted CTA.
           el.replaceChildren(document.createTextNode(announcement));
-          if(announcementUrl && announcementLinkLabel){
-            el.append(document.createTextNode(' ['));
-            const a=document.createElement('a');
-            a.href=announcementUrl;a.rel='noopener noreferrer';a.target='_blank';a.textContent=announcementLinkLabel;
-            el.append(a,document.createTextNode(']'));
+          if(announcementLinkLabel){
+            el.append(document.createTextNode(' '));
+            const callout=document.createElement('span');
+            callout.className='ticker-cta';
+            callout.textContent='['+announcementLinkLabel+']';
+            el.append(callout);
+          }
+          if(announcementUrl){
+            el.href=announcementUrl;
+            el.target='_blank';el.rel='noopener noreferrer';
+            el.setAttribute('aria-label',announcement+' '+announcementLinkLabel);
+          }else{
+            el.removeAttribute('href');el.removeAttribute('target');el.removeAttribute('rel');
+            el.removeAttribute('aria-label');
           }
         }
       }
