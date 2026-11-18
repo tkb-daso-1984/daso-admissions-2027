@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta name="dasuo-version" content="V7.0.1">
+<meta name="dasuo-version" content="V7.0.3">
 <meta name="dasuo-release-date" content="2026-11-18">
 <meta name="dasuo-signed-record-count" content="1135">
   <meta charset="UTF-8">
@@ -377,9 +377,9 @@
       <p class="notice-main">詳細資訊請依各校公告考試簡章為準</p>
     </section>
     <section class="panel filters-panel" aria-labelledby="filtertitle">
-      <div class="sectionhead"><div><h2 id="filtertitle">查詢條件</h2><p class="hint">支援學校、系所與考科模糊搜尋；多個關鍵字用空白或逗號分隔，符合任一項即可（例如「英文 國文」）。搜尋清華大學也包含「台聯大－清大」，可再依招生管道篩選。</p></div></div>
+      <div class="sectionhead"><div><h2 id="filtertitle">查詢條件</h2><p class="hint">單一關鍵字可搜尋學校、系所及考科；輸入兩個以上關鍵字時，僅比對實際考科與複試項目，全部關鍵字均須符合（AND，例如「英文 國文」）。可用空白、逗號或頓號分隔；如含擇一選考科目，仍須查看原有選考規則。搜尋清華大學也包含「台聯大－清大」，可再依招生管道篩選。</p></div></div>
       <div class="filters">
-        <div class="field"><label for="search">關鍵字搜尋</label><input id="search" type="search" autocomplete="off" placeholder="例如：英文 國文（符合任一項）"></div>
+        <div class="field"><label for="search">關鍵字搜尋</label><input id="search" type="search" autocomplete="off" placeholder="例如：英文 國文（同時符合）"></div>
         <div class="field"><label for="year">入學年度</label><select id="year"><option value="">全部年度</option></select></div>
         <div class="field"><label for="school">學校名稱（含台聯大聯招）</label><select id="school"><option value="">全部學校</option></select></div>
         <div class="field"><label for="route">招生管道</label><select id="route"><option value="">全部招生管道</option><option value="各校個別招生">各校個別招生</option><option value="台聯大聯招">台聯大聯招</option></select></div>
@@ -808,6 +808,26 @@
       }
       return [...set];
     }
+    // V7.0.3: index only the actual exam/second-stage subject items that
+    // appear as subject chips. Do not index schools, departments, group labels,
+    // explanatory notes, or the raw full record for a multi-subject query.
+    // Include every displayed choice as a searchable *option*, not as a
+    // mandatory paper: the original choice-group UI remains authoritative.
+    function extractSubjectSearchNames(exam,retest=''){
+      const names=new Set();
+      for(const raw of [exam,retest]){
+        for(const section of examSections(raw)){
+          const subjects=section.type==='options'
+            ? section.items.flatMap(choice=>choice.subjects)
+            : section.type==='chips' ? section.subjects : [];
+          for(const subject of subjects){
+            const label=normalizeText(plainSubjectName(subject)).replace(/\s+/g,'');
+            if(label)names.add(label);
+          }
+        }
+      }
+      return [...names];
+    }
     function refreshSubjectFilter(){
       const box=$('subjectFilter');box.hidden=selectedSubjects.size===0;
       $('chosenSubjects').replaceChildren();
@@ -919,7 +939,7 @@
     }
     function receive(rows,origin){
       if(!rows.length)throw Error('沒有有效的招生資料，請確認「學校名稱」及「系所名稱」已填寫。');
-      all=rows.map(orig=>{const r={...orig};for(const col of ['考試科目(筆試/審查)','複試','選考規則'])r[col]=stripSubjectCodes(r[col]);return {...r,'考試方式':methodLabel(r['考試方式']),__subjects:extractSubjects(r['考試科目(筆試/審查)'],r['複試']),__realSchool:schoolIdentity(r['實際學校']||r['學校名稱']),__route:admissionRoute(r)};});page=1;selectedSubjects.clear();selectedSubjectLabels.clear();
+      all=rows.map(orig=>{const r={...orig};for(const col of ['考試科目(筆試/審查)','複試','選考規則'])r[col]=stripSubjectCodes(r[col]);return {...r,'考試方式':methodLabel(r['考試方式']),__subjects:extractSubjects(r['考試科目(筆試/審查)'],r['複試']),__subjectSearchNames:extractSubjectSearchNames(r['考試科目(筆試/審查)'],r['複試']),__realSchool:schoolIdentity(r['實際學校']||r['學校名稱']),__route:admissionRoute(r)};});page=1;selectedSubjects.clear();selectedSubjectLabels.clear();
       listOptions('year','入學年度','全部年度');listSchoolOptions();listOptions('region','地區','全部地區');
       $('print').disabled=false;
       filter();
@@ -943,8 +963,9 @@
       box.append(node('strong','資料提醒： '),node('span',pieces.join('；')+'。詳細規定請以各校最新正式公告為準。'));
       box.style.display='block';
     }
-    // V7.0.1: allow multiple fuzzy keywords (OR). For instance 「英文 國文」
-    // finds programs containing either subject; keep existing aliases and filters.
+    // V7.0.3: one keyword preserves broad school/department/subject searching;
+    // two or more keywords require a match for *every term* in the real
+    // exam/second-stage subject list (AND), never unrelated record fields.
     function parseKeywordTerms(input){
       return [...new Set(normalizeText(input).trim().split(/[\s,，、;；]+/).filter(Boolean))];
     }
@@ -953,11 +974,32 @@
       const existingAlias=SUBJECT_EQUIVALENCES.get(q);
       if(existingAlias && r.__subjects.includes(existingAlias))return true;
       if(/^(?:英文|英語|英語文)$/.test(q) && r.__subjects.includes('@english'))return true;
-      // 國文與國語文視為同組關鍵字，但不更改原有考科名稱。
+      // 國文／國語文以考科名稱開頭匹配，不能把「英國文學」誤判為國文。
       if(/^(?:國文|國語文)$/.test(q) && r.__subjects.some(s=>/^(?:國文|國語文)/.test(s)))return true;
       return false;
     }
-    function keywordMatchesRow(r,keyword){
+    function subjectTermMatches(r,keyword){
+      const q=normalizeText(keyword).replace(/\s+/g,'');
+      if(!q)return false;
+      if(subjectKeywordMatch(r,q))return true;
+      const labels=r.__subjectSearchNames||[];
+      // Keep the existing computing-subject equivalences for exact names and
+      // for compound labels such as 「計算機概論與程式設計」.
+      if(SUBJECT_EQUIVALENCES.has(q)){
+        return labels.some(name=>['電子計算機概論','計算機概論'].some(alias=>name.includes(alias)));
+      }
+      if(/^(?:國文|國語文)$/.test(q)){
+        return labels.some(name=>/^(?:國文|國語文)/.test(name));
+      }
+      if(/^(?:英文|英語|英語文)$/.test(q)){
+        return labels.some(name=>/(?:英文|英語)/.test(name));
+      }
+      // Fuzzy matching happens *inside each actual subject label*, not the
+      // department name, selection caption, or a textual admission note.
+      return labels.some(name=>name.includes(q));
+    }
+    function keywordMatchesRow(r,keyword,subjectsOnly=false){
+      if(subjectsOnly)return subjectTermMatches(r,keyword);
       return subjectKeywordMatch(r,keyword)
         || schoolSearchText(r).includes(keyword)
         || ['系所名稱','招生組別','考試科目(筆試/審查)','考試方式','複試','入學年度'].some(k=>normalizeText(r[k]).includes(keyword));
@@ -970,7 +1012,7 @@
         &&selections.every(([id,key])=>!$(id).value||r[key]===$(id).value)
         &&(!selectedMethod||r['考試方式']===selectedMethod)
         &&(!selectedSubjects.size||($('subjectMode').value==='all'?[...selectedSubjects].every(s=>r.__subjects.includes(s)):[...selectedSubjects].some(s=>r.__subjects.includes(s))))
-        &&(!keywords.length||keywords.some(keyword=>keywordMatchesRow(r,keyword))));
+        &&(!keywords.length||keywords.every(keyword=>keywordMatchesRow(r,keyword,keywords.length>1))));
       page=1;refreshSubjectFilter();draw();
     }
     function sumSharedUnique(rows){
